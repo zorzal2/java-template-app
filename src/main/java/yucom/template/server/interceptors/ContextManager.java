@@ -19,13 +19,30 @@ import java.util.stream.Collectors;
 @Component
 public class ContextManager extends HandlerInterceptorAdapter {
 
+    private static Logger LOGGER = LoggerFactory.getLogger(ContextManager.class.getSimpleName());
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         TCStore.clear();
 
+        String transactionID = Collections.list(request.getHeaderNames())
+                .stream()
+                .filter("TxID".toLowerCase()::equals)
+                .map(request::getHeader)
+                .findAny()
+                .orElseGet(() -> {
+                    UUID uuid = UUID.randomUUID();
+                    LOGGER.warn("No transaction id header was found -> A random UUID will be set : " + uuid);
+                    return uuid.toString();
+                });
+
+        TCStore.save("TxID", transactionID);
+
+        response.setHeader("TxID", transactionID);
+
         List xheaders = Collections.list(request.getHeaderNames())
                 .stream()
-                .filter(name -> name.startsWith("X-"))
+                .filter(name -> name.toLowerCase().startsWith("x-"))
                 .map(name -> new Pair<>(name, request.getHeader(name)))
                 .collect(Collectors.toList());
 
@@ -33,8 +50,6 @@ public class ContextManager extends HandlerInterceptorAdapter {
 
         return true;
     }
-
-
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {

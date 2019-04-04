@@ -45,7 +45,7 @@ public class RequestLogger extends HandlerInterceptorAdapter {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {
         String headers = response.getHeaderNames()
                 .stream()
-                .map((name) -> "\""+ name +"\":\""+ request.getHeader(name)+"\"")
+                .map((name) -> "\""+ name +"\":\""+ response.getHeader(name)+"\"")
                 .collect(Collectors.joining(","));
 
         this.logOutput("status", response.getStatus());
